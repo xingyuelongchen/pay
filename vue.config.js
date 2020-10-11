@@ -1,5 +1,6 @@
 
-const config = require('./src/config');
+const config = require('./src/api/config');
+// import config from './src/api'
 if (process.env.NODE_ENV != 'development') {
     // builder时，更新版本号
     const json = require('./package.json');
@@ -11,7 +12,7 @@ if (process.env.NODE_ENV != 'development') {
 }
 module.exports = {
     productionSourceMap: false, // 不生成.map映射文件
-    publicPath: config.routePath, // 部署目录
+    publicPath: config.location.publicPath, // 部署目录
     chainWebpack: config => {
         config.plugin("html").tap(args => {
             args[0].minify = false;
@@ -26,8 +27,8 @@ module.exports = {
         // https: true,   //是否使用https协议
         // hotOnly: true, //是否开启热更新
         proxy: {
-            "/adminapi": {
-                target: config.baseUrlDev,
+            "/client": {
+                target: config.axios.baseUrlDev,
                 ws: true,
                 changeOrigin: true
                 // pathRewrite: {
@@ -35,7 +36,7 @@ module.exports = {
                 // }
             },
             "/statistics/": {
-                target: config.baseUrlDev,
+                target: config.axios.baseUrlDev,
                 ws: true,
                 changeOrigin: true
                 // pathRewrite: {
@@ -43,12 +44,12 @@ module.exports = {
                 // }
             },
             "/uploads": {
-                target: config.baseUrlDev,
+                target: config.axios.baseUrlDev,
                 ws: true,
                 changeOrigin: true
             },
             "/admin": {
-                target: config.baseUrlDev,
+                target: config.axios.baseUrlDev,
                 ws: true,
                 changeOrigin: true
             },

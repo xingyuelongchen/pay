@@ -1,11 +1,14 @@
 <!--
-Template Name: Cashier
+Template Name: Cashier pc
 Create author: qinglong
 Create Time  : 2020-09-15
 -->
 <template>
   <div class="container">
-    <div class="body">
+    <div class="head">
+      <div class="nav"> </div>
+    </div>
+    <div :class="['body']">
       <div class="nav">
         <div class="logo">
           <img src="http://www.guangyizhou.cn/public/home1/assets/img/logo2.svg" alt="">
@@ -34,19 +37,19 @@ Create Time  : 2020-09-15
             <div class="pic">
               <img :src="item.pic" alt="">
             </div>
-            <div class="text">{{item.text}}</div>
+            <div class="text">{{item.title}}</div>
             <div class="price">￥{{item.price}}</div>
           </div>
         </template>
       </div>
     </div>
     <div class="foot">
-      <div class="item">
+      <div :class="['item']">
         <div>
           <div>共选择 1 件商品</div>
           <div>
             总价：
-            <span class="price">￥2000.00 </span>
+            <span class="price">￥{{totalprice }} </span>
           </div>
         </div>
         <div class="btn" @click.stop="submit">提交订单</div>
@@ -70,6 +73,8 @@ export default {
     return {
       submitShow: false,
       payType: "alipay",
+      totalprice: 0,
+      order_no: null,
       payment: [
         { icon: "&#xe62e;", type: "alipay", text: "支付宝" },
         { icon: "&#xe60e;", type: "wechat", text: "微信" },
@@ -81,11 +86,44 @@ export default {
           text: "描述信息",
           price: "200.20",
         },
+        {
+          pic: "http://www.guangyizhou.cn/public/home1/assets/img/logo2.svg",
+          text: "描述信息",
+          price: "200.20",
+        },
+        {
+          pic: "http://www.guangyizhou.cn/public/home1/assets/img/logo2.svg",
+          text: "描述信息",
+          price: "200.20",
+        },
+        {
+          pic: "http://www.guangyizhou.cn/public/home1/assets/img/logo2.svg",
+          text: "描述信息",
+          price: "200.20",
+        },
       ],
     };
   },
-  created() {},
+  created() {
+    this.getData();
+  },
   methods: {
+    async getData() {
+      let userinfo = window.localStorage.getItem("userinfo") || false;
+      if (userinfo) {
+        userinfo = JSON.parse(userinfo);
+        let { data } = await this.axios("/client/Order/info_order", {
+          data: userinfo,
+        });
+        if (data.code) {
+          this.orderList = [data.data];
+          let num = "";
+          this.orderList.map((e) => (num += e.price));
+          this.totalprice = num;
+          this.order_no = data.data.order_no;
+        }
+      }
+    },
     setPayment(index) {
       this.payment = this.payment.map((e, i) => {
         e.isActive = false;
@@ -97,70 +135,32 @@ export default {
       });
     },
     async submit() {
-      let { data } = await this.axios("/adminapi", {
+      if (this.isUA !== "web") {
+        this.$alert("请使用电脑打开本支付页面", "警告！", {
+          type: "error",
+        });
+        return;
+      }
+      let { data } = await this.axios("/client/Order/payment", {
         data: { type: this.payType, payment: this.isUA },
       });
       if (data.code) {
-        if (this.isUA == "h5") {
-          // 浏览器调用
-          if (this.payType == "wechat") {
-            // 微信支付
-            window.open("http://baidu.com", "_blank");
-          }
-          if (this.payType == "alipay") {
-            // 支付宝支付
-            window.open("http://baidu.com", "_blank");
-          }
-        } else if (this.isUA == "wechat" && this.payType == "wechat") {
-          // 微信内支付
-          let params = data.data;
-          this.wechatPay(params);
-        } else if (this.isUA == "wechat" && this.payType == "alipay") {
-          //微信内使用支付宝支付
-          alert("微信内不支持支付宝付款，请使用浏览器打开本付款页面");
-        } else if (this.isUA == "alipay" && this.payType == "alipay") {
-          // 支付宝内支付
-          alert("请使用浏览器打开本付款页面");
-        } else if (this.isUA == "alipay" && this.payType == "wechat") {
-          // 支付宝内支付
-          alert("请使用浏览器打开本付款页面");
+        if (this.payType == "wechat") {
+          let routeData = this.$router.resolve({
+            path: "payment",
+            query: {
+              qrcode: "", // 二维码地址,
+              totalprice: this.totalprice,
+              order_no: this.order_no,
+            },
+          });
+          window.open(routeData.href, "_blank");
+        }
+        if (this.payType == "alipay") {
+          window.open(data.data, "_blank");
         }
         this.submitShow = true;
-      } else {
-        this.$alert("信息有误");
       }
-    },
-    wechatPay(params) {
-      if (typeof WeixinJSBridge == "undefined") {
-        if (document.addEventListener) {
-          document.addEventListener(
-            "WeixinJSBridgeReady",
-            () => this.onBridgeReady(params),
-            false
-          );
-        } else if (document.attachEvent) {
-          document.attachEvent("WeixinJSBridgeReady", () =>
-            this.onBridgeReady(params)
-          );
-          document.attachEvent("onWeixinJSBridgeReady", () =>
-            this.onBridgeReady(params)
-          );
-        }
-      } else {
-        this.onBridgeReady(params);
-      }
-    },
-    onBridgeReady(params) {
-      WeixinJSBridge.invoke("getBrandWCPayRequest", params, (res) => {
-        if (res.err_msg == "get_brand_wcpay_request:ok") {
-          alert("支付成功");
-          window.history.go(-2);
-        } else if (res.err_msg == "get_brand_wcpay_request:fail") {
-          alert("支付失败");
-        } else if (res.err_msg == "get_brand_wcpay_request:cancel") {
-          alert("取消支付");
-        }
-      });
     },
     async success() {
       // 支付成功
@@ -180,26 +180,29 @@ export default {
   position: relative;
   width: 100%;
   height: 100vh;
-  // overflow: hidden;
-  // background: #f9f9f9;
+  overflow: hidden;
+  background: #f9f9f9;
+  .head {
+    height: 200px;
+    background: rgba(0, 0, 0, 0.1);
+    background: url(~@/assets/image/bg.jpg) center center;
+  }
   .body {
+    width: 60%;
+    min-width: 900px;
     background: #fff;
-    margin: 0 auto;
+    height: calc(100vh - 200px);
+    border-radius: 10px;
+    margin: -100px auto 0;
+    box-shadow: 0 0 30px 5px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    padding-top: 100px;
-    margin-bottom: 100px;
     .nav {
       height: 100px;
+      border-bottom: 1px solid #ccc;
       padding: 10px;
       box-sizing: border-box;
       display: flex;
       align-items: center;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #fff;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
       .logo {
         width: 180px;
         height: 70px;
@@ -217,24 +220,29 @@ export default {
       }
     }
     .body-content {
+      padding-right: 12px;
+      margin-right: -12px;
+      overflow: hidden;
+      overflow-y: scroll;
+      height: calc(100% - 320px);
+      // margin-bottom: 120px;
       .item {
         display: flex;
         justify-content: space-between;
         align-items: center;
         height: 120px;
         padding: 10px;
-        margin: 20px 20px;
+        margin: 20px 0 20px 20px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         box-sizing: border-box;
         .pic {
           width: 200px;
           height: 100px;
-          background: #eee;
           img {
             display: inline-block;
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
           }
         }
         .text {
@@ -252,36 +260,38 @@ export default {
       padding: 20px 0;
       overflow: hidden;
       .list {
-        .item {
-          height: 60px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin: 10px 20px;
-          box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-          border-radius: 5px;
-          padding: 0 20px;
-          cursor: pointer;
+        display: flex;
+      }
+      .item {
+        width: 200px;
+        height: 60px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 10px 20px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+        padding: 0 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        &:hover,
+        &.active {
           transition: all 0.2s;
-          &:hover,
-          &.active {
-            transition: all 0.2s;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-          }
+          box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
         }
-        .iconfont {
-          font-size: 26px;
-        }
-        .icon {
-          font-size: 40px;
-          width: 15px;
-          height: 45px;
-          img {
-            width: 100%;
-            height: 100%;
-            display: inline-block;
-            object-fit: contain;
-          }
+      }
+      .iconfont {
+        font-size: 26px;
+      }
+      .icon {
+        font-size: 40px;
+        width: 15px;
+        height: 45px;
+        img {
+          width: 100%;
+          height: 100%;
+          display: inline-block;
+          object-fit: contain;
         }
       }
     }
@@ -292,7 +302,7 @@ export default {
     font-size: 26px;
   }
   .foot {
-    position: fixed;
+    position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
@@ -303,15 +313,15 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #fff;
     .item {
-      width: 100%;
+      width: 60%;
+      min-width: 900px;
       font-size: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       height: 100%;
-      padding-left: 20px;
+
       .btn {
         width: 200px;
         background: rgb(161, 0, 0);

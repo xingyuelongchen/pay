@@ -54,19 +54,14 @@ export default {
   },
   methods: {
     async init() {
-      let { price, order_on } = this.$route.query;
-      this.order_on = order_on;
-      this.price = price || 0;
-      let { data } = this.axios("/adminapi", {
-        data: { order_on: this.order_on },
-      });
-      if (data.code) {
-        this.src = data.data;
-        this.timer = setInterval(() => {
-          this.time -= 1;
-          if (this.time == 0) clearInterval(this.timer);
-        }, 1000);
-      }
+      let { totalprice, order_no, qrcode } = this.$route.query;
+      this.order_on = order_no;
+      this.price = totalprice || 0;
+      this.src = qrcode;
+      this.timer = setInterval(() => {
+        this.time -= 1;
+        if (this.time == 0) clearInterval(this.timer);
+      }, 1000);
     },
   },
   beforeDestroy() {

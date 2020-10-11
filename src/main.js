@@ -3,14 +3,16 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import ELementUI from 'element-ui'
-import axios from './api'
-import './assets/font/iconfont.css'
-import 'element-ui/packages/theme-chalk/lib/index.css'
-Vue.config.productionTip = false
-
-
-Vue.prototype.axios = axios;
-Vue.use(ELementUI)
+import Vant from 'vant';
+import api from './api';
+import '@vant/touch-emulator';
+import 'vant/lib/index.css';
+import './assets/font/iconfont.css';
+import 'element-ui/packages/theme-chalk/lib/index.css';
+Vue.config.productionTip = false;
+Vue.use(Vant);
+Vue.use(api);
+Vue.use(ELementUI);
 new Vue({
   router,
   store,
